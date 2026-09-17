@@ -9,8 +9,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: 安装 Android SDK
-        uses: android-actions/setup-android@v3
       - name: 解压并定位项目
         run: |
           ZIP=$(find . -maxdepth 1 -name '*.zip' | head -1)
@@ -19,7 +17,6 @@ jobs:
           cd project
           if [ -f settings.gradle ] || [ -f settings.gradle.kts ]; then
             echo "PROJECT_ROOT=." >> $GITHUB_ENV
-            
           else
             ROOT=$(find . -maxdepth 2 -name 'settings.gradle*' -printf '%h\n' | head -1)
             [ -z "$ROOT" ] && { echo "不是Android项目"; exit 1; }
@@ -29,6 +26,10 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - name: 安装 Android SDK
+        run: |
+          yes | sdkmanager --licenses > /dev/null 2>&1 || true
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" > /dev/null 2>&1 || true
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
