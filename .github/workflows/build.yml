@@ -1,0 +1,45 @@
+name: 自动编译APK
+on:
+  push:
+    paths:
+      - '*.zip'
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 解压并定位项目
+        run: |
+          ZIP=$(find . -maxdepth 1 -name '*.zip' | head -1)
+          [ -z "$ZIP" ] && { echo "没有zip文件"; exit 1; }
+          unzip -q "$ZIP" -d project
+          cd project
+          if [ -f settings.gradle ] || [ -f settings.gradle.kts ]; then
+            echo "PROJECT_ROOT=." >> $GITHUB_ENV
+          else
+            ROOT=$(find . -maxdepth 2 -name 'settings.gradle*' -printf '%h\n' | head -1)
+            [ -z "$ROOT" ] && { echo "不是Android项目"; exit 1; }
+            echo "PROJECT_ROOT=$ROOT" >> $GITHUB_ENV
+          fi
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+      - name: 编译
+        run: |
+          cd "$PROJECT_ROOT"
+          if [ -f gradlew ]; then
+            chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+          else
+            gradle assembleDebug --no-daemon
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: APK成品
+          path: ${{ env.PROJECT_ROOT }}/app/build/outputs/apk/**/*.apk
+          if-no-files-found: error
+          
