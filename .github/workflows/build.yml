@@ -16,11 +16,11 @@ jobs:
           unzip -q "$ZIP" -d project
           cd project
           if [ -f settings.gradle ] || [ -f settings.gradle.kts ]; then
-            echo "PROJECT_ROOT=." >> $GITHUB_ENV
+            echo "PROJECT_ROOT=$PWD" >> $GITHUB_ENV
           else
             ROOT=$(find . -maxdepth 2 -name 'settings.gradle*' -printf '%h\n' | head -1)
             [ -z "$ROOT" ] && { echo "不是Android项目"; exit 1; }
-            echo "PROJECT_ROOT=$ROOT" >> $GITHUB_ENV
+            echo "PROJECT_ROOT=$PWD/$ROOT" >> $GITHUB_ENV
           fi
       - uses: actions/setup-java@v4
         with:
